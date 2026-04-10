@@ -4,6 +4,10 @@ import os
 BKCHAT_APP_ID = os.getenv('BKCHAT_APP_ID')
 BKCHAT_APP_SECRET = os.getenv('BKCHAT_APP_SECRET')
 BKCHAT_APIGW_ROOT = os.getenv('BKCHAT_APIGW_ROOT')
+
+BKCHAT_NEW_APP_ID = os.getenv('BKCHAT_NEW_APP_ID')
+BKCHAT_NEW_APP_SECRET = os.getenv('BKCHAT_NEW_APP_SECRET')
+BKCHAT_NEW_APIGW_ROOT = os.getenv('BKCHAT_NEW_APIGW_ROOT')
 BKCHAT_PIPELINE_CONFIG = {
     "language": "zh",
     "training_data": "",
