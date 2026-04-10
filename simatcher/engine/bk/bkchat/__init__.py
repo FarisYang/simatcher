@@ -20,6 +20,21 @@ if BKCHAT_NEW_APIGW_ROOT:
     _BACKENDS.append((BKCHAT_NEW_APIGW_ROOT, BKCHAT_NEW_APP_ID, BKCHAT_NEW_APP_SECRET))
 
 
+def _build_headers(app_id: str, app_secret: str) -> Dict[str, str]:
+    """构建 API 网关认证 header，兼容新老 SG 网关。"""
+    return {
+        'Content-Type': 'application/json',
+        'X-Bkapi-Authorization': json.dumps({
+            'bk_app_code': app_id,
+            'bk_app_secret': app_secret,
+            'bk_username': 'admin',
+        }),
+        'X-Bk-Tenant-Id': 'tencent',
+        'App-Id': app_id,
+        'App-Token': app_secret,
+    }
+
+
 async def _load_data_from_remote(path: str,
                                  host: str = BKCHAT_APIGW_ROOT,
                                  app_id: str = BKCHAT_APP_ID,
@@ -28,10 +43,14 @@ async def _load_data_from_remote(path: str,
     access_token = urllib.parse.urlencode({'bk_app_code': app_id,
                                            'bk_app_secret': app_secret})
     url = f"{host}/{path}?{access_token}"
+    headers = _build_headers(app_id, app_secret)
+    if 'headers' in kwargs:
+        headers.update(kwargs.pop('headers'))
     try:
-        async with aiohttp.request(method, url, **kwargs) as resp:
+        async with aiohttp.request(method, url, headers=headers, **kwargs) as resp:
             if 200 <= resp.status < 300:
                 return json.loads(await resp.text())
+            logger.warning('_load_data_from_remote: HTTP %s host=%s path=%s', resp.status, host, path)
             raise ActionFailed(502)
     except aiohttp.InvalidURL:
         raise ActionFailed(401, 'API root url invalid')
