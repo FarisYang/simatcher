@@ -1,4 +1,5 @@
 import os
+import logging
 from typing import Optional
 
 from fastapi import FastAPI, Request, Depends, Cookie, BackgroundTasks
@@ -13,6 +14,7 @@ from .models import (
     BKChatModel, KBTrainModel, KBPredictModel
 )
 
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = SelfOAuth2PasswordBearer(tokenUrl="token")
 app = FastAPI(dependencies=[Depends(oauth2_scheme)])
@@ -44,7 +46,12 @@ async def predict_bkchat(item: BKChatModel, bk_uid: Optional[str] = Cookie(None)
     pool = await engine.load_corpus_text(**item.filter)
     slots = await engine.load_slots(**item.filter)
     result = engine.classify(item.text, pool=pool, regex_features=slots)
-    return Response(data=result)
+    resp = Response(data=result)
+    try:
+        return resp
+    except Exception:
+        logger.exception('predict_bkchat response serialization failed, filter=%s', item.filter)
+        return JSONResponse(content={'result': False, 'code': -1, 'data': {}, 'message': 'serialize error'})
 
 
 @app.post("/api/kb/train/")

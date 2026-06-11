@@ -39,11 +39,22 @@ class L2Classifier(Classifier):
             'distances': similarity['distances'][0],
             'ann': similarity['ann'][0]
         })
+        similarity = similarity[
+            (similarity['ann'] >= 0) & np.isfinite(similarity['distances'])
+        ]
+        if similarity.empty:
+            message.set(RANKING, [])
+            message.set(INTENT, {})
+            return
         pool_df = message.get(POOL_DATA_FRAME)
         merge = pd.merge(similarity, pool_df, left_on='ann', right_index=True)
         results = merge.to_dict('records')
+        for row in results:
+            for k, v in row.items():
+                if isinstance(v, float) and not np.isfinite(v):
+                    row[k] = None
         message.set(RANKING, results)
-        message.set(INTENT, results[0])
+        message.set(INTENT, results[0] if results else {})
 
     def predict(self, x: List) -> Tuple[np.ndarray, np.ndarray]:
         pass
